@@ -1,0 +1,132 @@
+---
+# tasks file for hadoop-master
+- name: Update linux apt
+  ansible.builtin.apt:
+    name: "*"
+    state: latest
+
+# - name: Install java8
+#   ansible.builtin.apt:    
+#     name: openjdk-8-jdk
+#     state: latest
+#     install_recommends: no
+
+# - name: Download Hadoop
+#   ansible.builtin.get_url:
+#     url: https://mirrors.sonic.net/apache/hadoop/common/hadoop-3.4.1/hadoop-3.4.1.tar.gz
+#     dest: ~/hadoop-3.4.1.tar.gz
+
+- name: Install required packages
+  apt:
+    name: 
+      - openjdk-11-jdk
+    state: present
+
+- name: Download Hadoop
+  get_url:
+    url: "https://downloads.apache.org/hadoop/common/hadoop-{{ hadoop_version }}/hadoop-{{ hadoop_version }}.tar.gz"
+    dest: "/tmp/hadoop-{{ hadoop_version }}.tar.gz"
+    mode: '0755'
+    
+- name: Create hadoop installer directory
+  file:
+    path: "{{ hadoop_install_dir }}"
+    state: directory
+    
+- name: Extract Hadoop
+  unarchive:
+    src: "/tmp/hadoop-{{ hadoop_version }}.tar.gz"
+    dest: "{{ hadoop_install_dir }}"
+    remote_src: yes
+
+- name: Create symbolic link for Hadoop
+  file:
+    src: "{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}"
+    dest: "/usr/local/hadoop"
+    state: link
+
+- name: Set environment variables for Hadoop
+  blockinfile:
+    path: "/etc/profile.d/hadoop.sh"
+    block: |
+      export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64
+      export HADOOP_HOME=/usr/local/hadoop
+      export PATH=$PATH:$HADOOP_HOME/bin
+      export PATH=$PATH:$HADOOP_HOME/sbin
+      export HADOOP_MAPRED_HOME=$HADOOP_HOME
+      export HADOOP_COMMON_HOME=$HADOOP_HOME
+      export HADOOP_HDFS_HOME=$HADOOP_HOME
+      export YARN_HOME=$HADOOP_HOME
+    create: yes
+    mode: "7055"
+
+- name: Source Hadoop environment
+  shell: "source /etc/profile.d/hadoop.sh"
+  args:
+    executable: /bin/bash
+    
+- name:  Add JAVA_HOME в /etc/environment
+  lineinfile:
+    path: /etc/environment
+    line: 'JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64'
+    state: present
+    
+- name:  Add HDFS_SECONDARYNAMENODE_USER in /etc/environment
+  lineinfile:
+    path: /etc/environment
+    line: 'HDFS_SECONDARYNAMENODE_USER=vboxuser'
+    state: present
+
+- name:  Add HDFS_NAMENODE_USER in /etc/environment
+  lineinfile:
+    path: /etc/environment
+    line: 'HDFS_NAMENODE_USER=vboxuser'
+    state: present
+    
+- name:  Add HDFS_DATANODE_USER in /etc/environment
+  lineinfile:
+    path: /etc/environment
+    line: 'HDFS_DATANODE_USER=vboxuser'
+    state: present
+    
+- name:  Add YARN_NODEMANAGER_USER in /etc/environment
+  lineinfile:
+    path: /etc/environment
+    line: 'YARN_NODEMANAGER_USER=vboxuser'
+    state: present
+    
+- name:  Add YARN_RESOURCEMANAGER_USER in /etc/environment
+  lineinfile:
+    path: /etc/environment
+    line: 'YARN_RESOURCEMANAGER_USER=vboxuser'
+    state: present
+    
+- name: Download local variables from /etc/environment
+  shell: source /etc/environment
+  args:
+    executable: /bin/bash
+    
+
+- name: Copy Hadoop configuration files
+  template:
+    src: "{{ item.src }}"
+    dest: "/usr/local/hadoop/etc/hadoop/{{ item.dest }}"
+  loop:
+    - { src: "core-site.xml.j2", dest: "core-site.xml" }
+    - { src: "hdfs-site.xml.j2", dest: "hdfs-site.xml" }
+    - { src: "mapred-site.xml.j2", dest: "mapred-site.xml" }
+    - { src: "yarn-site.xml.j2", dest: "yarn-site.xml" }
+    
+  
+- name: Format the Hadoop namenode
+  command: "/usr/local/hadoop/bin/hdfs namenode -format"
+  when: "'master' in group_names"
+
+- name: Start HDFS daemons
+  shell: /usr/local/hadoop/sbin/start-dfs.sh
+  become: true
+
+- name: Start YARN daemons
+  shell: /usr/local/hadoop/sbin/start-yarn.sh
+  become: true
+

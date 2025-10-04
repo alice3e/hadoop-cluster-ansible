@@ -1,0 +1,16 @@
+---
+hadoop-master:
+  hosts:
+    master:
+      ansible_host: 192.168.64.3
+
+hadoop-worker:
+  hosts:
+    worker01:
+      ansible_host: 192.168.64.4
+
+all:
+  vars:
+    ansibel_user: vboxuser
+    hadoop_version: 3.4.1
+    hadoop_install_dir: /opt/hadoop

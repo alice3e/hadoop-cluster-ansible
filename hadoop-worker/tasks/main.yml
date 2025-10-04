@@ -1,0 +1,52 @@
+---
+- name: Install required packages
+  apt:
+    name: 
+      - openjdk-11-jdk
+    state: present
+
+- name: Download Hadoop
+  get_url:
+    url: "https://downloads.apache.org/hadoop/common/hadoop-{{ hadoop_version }}/hadoop-{{ hadoop_version }}.tar.gz"
+    dest: "/tmp/hadoop-{{ hadoop_version }}.tar.gz"
+    mode: '0755'
+    
+- name: Create hadoop installer directory
+  file:
+    path=/opt/hadoop
+    state=directory
+    
+- name: Extract Hadoop
+  unarchive:
+    src: "/tmp/hadoop-{{ hadoop_version }}.tar.gz"
+    dest: "{{ hadoop_install_dir }}"
+    remote_src: yes
+
+- name: Create symbolic link for Hadoop
+  file:
+    src: "{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}"
+    dest: "/usr/local/hadoop"
+    state: link
+
+- name: Set environment variables for Hadoop
+  blockinfile:
+    path: "/etc/profile.d/hadoop.sh"
+    block: |
+      export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64
+      export HADOOP_HOME=/usr/local/hadoop
+      export PATH=$PATH:$HADOOP_HOME/bin
+      export PATH=$PATH:$HADOOP_HOME/sbin
+      export HADOOP_MAPRED_HOME=$HADOOP_HOME
+      export HADOOP_COMMON_HOME=$HADOOP_HOME
+      export HADOOP_HDFS_HOME=$HADOOP_HOME
+      export YARN_HOME=$HADOOP_HOME
+    create: yes
+    mode: "7055"
+
+- name: Copy Hadoop configuration files
+  template:
+    src: "{{ item.src }}"
+    dest: "/usr/local/hadoop/etc/hadoop/{{ item.dest }}"
+  loop:
+    - { src: "core-site.xml.j2", dest: "core-site.xml" }
+    - { src: "hdfs-site.xml.j2", dest: "hdfs-site.xml" }
