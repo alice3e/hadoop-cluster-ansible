@@ -1,4 +1,10 @@
 ---
+- name: Update linux apt
+  ansible.builtin.apt:
+    name: "*"
+    state: latest
+    update_cache: yes
+
 - name: Install required packages
   apt:
     name: 
@@ -13,8 +19,8 @@
     
 - name: Create hadoop installer directory
   file:
-    path=/opt/hadoop
-    state=directory
+    path: "{{ hadoop_install_dir }}"
+    state: directory
     
 - name: Extract Hadoop
   unarchive:
@@ -41,7 +47,33 @@
       export HADOOP_HDFS_HOME=$HADOOP_HOME
       export YARN_HOME=$HADOOP_HOME
     create: yes
-    mode: "7055"
+    mode: "0755"  # Исправлен режим с 7055 на 0755
+  notify:
+    - restart hadoop datanode
+    - restart hadoop nodemanager
+
+- name: Source Hadoop environment
+  shell: "source /etc/profile.d/hadoop.sh"
+  args:
+    executable: /bin/bash
+
+- name: Set environment variables in /etc/environment
+  lineinfile:
+    path: /etc/environment
+    line: "{{ item }}"
+    state: present
+  loop:
+    - 'JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64'
+    - 'HDFS_DATANODE_USER={{ ansible_user }}'
+    - 'YARN_NODEMANAGER_USER={{ ansible_user }}'
+  notify:
+    - restart hadoop datanode
+    - restart hadoop nodemanager
+
+- name: Download local variables from /etc/environment
+  shell: source /etc/environment
+  args:
+    executable: /bin/bash
 
 - name: Copy Hadoop configuration files
   template:
@@ -50,3 +82,6 @@
   loop:
     - { src: "core-site.xml.j2", dest: "core-site.xml" }
     - { src: "hdfs-site.xml.j2", dest: "hdfs-site.xml" }
+  notify:
+    - restart hadoop datanode
+    - restart hadoop nodemanager
