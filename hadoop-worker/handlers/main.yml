@@ -1,2 +1,10 @@
 ---
-# handlers file for hadoop-worker
+- name: restart hadoop datanode
+  service:
+    name: hadoop-datanode
+    state: restarted
+
+- name: restart hadoop nodemanager
+  service:
+    name: hadoop-nodemanager
+    state: restarted

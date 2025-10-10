@@ -1,2 +1,15 @@
 ---
-# handlers file for hadoop-master
+- name: restart hadoop namenode
+  service:
+    name: hadoop-namenode
+    state: restarted
+
+- name: restart hadoop resourcemanager
+  service:
+    name: hadoop-resourcemanager
+    state: restarted
+
+- name: restart hadoop historyserver
+  service:
+    name: hadoop-historyserver
+    state: restarted

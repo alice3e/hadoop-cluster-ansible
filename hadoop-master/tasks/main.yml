@@ -4,17 +4,7 @@
   ansible.builtin.apt:
     name: "*"
     state: latest
-
-# - name: Install java8
-#   ansible.builtin.apt:    
-#     name: openjdk-8-jdk
-#     state: latest
-#     install_recommends: no
-
-# - name: Download Hadoop
-#   ansible.builtin.get_url:
-#     url: https://mirrors.sonic.net/apache/hadoop/common/hadoop-3.4.1/hadoop-3.4.1.tar.gz
-#     dest: ~/hadoop-3.4.1.tar.gz
+    update_cache: yes
 
 - name: Install required packages
   apt:
@@ -58,54 +48,33 @@
       export HADOOP_HDFS_HOME=$HADOOP_HOME
       export YARN_HOME=$HADOOP_HOME
     create: yes
-    mode: "7055"
+    mode: "0755"  # Исправлен режим с 7055 на 0755
 
 - name: Source Hadoop environment
   shell: "source /etc/profile.d/hadoop.sh"
   args:
     executable: /bin/bash
     
-- name:  Add JAVA_HOME в /etc/environment
+- name: Set environment variables in /etc/environment
   lineinfile:
     path: /etc/environment
-    line: 'JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64'
+    line: "{{ item }}"
     state: present
-    
-- name:  Add HDFS_SECONDARYNAMENODE_USER in /etc/environment
-  lineinfile:
-    path: /etc/environment
-    line: 'HDFS_SECONDARYNAMENODE_USER=vboxuser'
-    state: present
+  loop:
+    - 'JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64'
+    - 'HDFS_SECONDARYNAMENODE_USER={{ ansible_user }}'
+    - 'HDFS_NAMENODE_USER={{ ansible_user }}'
+    - 'HDFS_DATANODE_USER={{ ansible_user }}'
+    - 'YARN_NODEMANAGER_USER={{ ansible_user }}'
+    - 'YARN_RESOURCEMANAGER_USER={{ ansible_user }}'
+  notify:
+    - restart hadoop namenode
+    - restart hadoop resourcemanager
 
-- name:  Add HDFS_NAMENODE_USER in /etc/environment
-  lineinfile:
-    path: /etc/environment
-    line: 'HDFS_NAMENODE_USER=vboxuser'
-    state: present
-    
-- name:  Add HDFS_DATANODE_USER in /etc/environment
-  lineinfile:
-    path: /etc/environment
-    line: 'HDFS_DATANODE_USER=vboxuser'
-    state: present
-    
-- name:  Add YARN_NODEMANAGER_USER in /etc/environment
-  lineinfile:
-    path: /etc/environment
-    line: 'YARN_NODEMANAGER_USER=vboxuser'
-    state: present
-    
-- name:  Add YARN_RESOURCEMANAGER_USER in /etc/environment
-  lineinfile:
-    path: /etc/environment
-    line: 'YARN_RESOURCEMANAGER_USER=vboxuser'
-    state: present
-    
 - name: Download local variables from /etc/environment
   shell: source /etc/environment
   args:
     executable: /bin/bash
-    
 
 - name: Copy Hadoop configuration files
   template:
@@ -116,11 +85,16 @@
     - { src: "hdfs-site.xml.j2", dest: "hdfs-site.xml" }
     - { src: "mapred-site.xml.j2", dest: "mapred-site.xml" }
     - { src: "yarn-site.xml.j2", dest: "yarn-site.xml" }
+  notify:
+    - restart hadoop namenode
+    - restart hadoop resourcemanager
+    - restart hadoop historyserver
     
-  
 - name: Format the Hadoop namenode
   command: "/usr/local/hadoop/bin/hdfs namenode -format"
   when: "'master' in group_names"
+  notify:
+    - restart hadoop namenode
 
 - name: Start HDFS daemons
   shell: /usr/local/hadoop/sbin/start-dfs.sh
@@ -129,4 +103,3 @@
 - name: Start YARN daemons
   shell: /usr/local/hadoop/sbin/start-yarn.sh
   become: true
-
