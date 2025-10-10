@@ -1,12 +1,12 @@
 ---
 - name: Configure hadoop master
-  hosts: hadoop-master
+  hosts: hadoop_master
   become: true
   roles:
     - hadoop-master
 
 - name: Configure workers
-  hosts: hadoop-worker
+  hosts: hadoop_worker
   become: true
   roles:
     - hadoop-worker

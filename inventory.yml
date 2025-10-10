@@ -1,10 +1,10 @@
 ---
-hadoop-master:
+hadoop_master:
   hosts:
     master:
       ansible_host: 192.168.56.2
 
-hadoop-worker:
+hadoop_worker:
   hosts:
     worker01:
       ansible_host: 192.168.56.4
