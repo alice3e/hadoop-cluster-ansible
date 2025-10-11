@@ -4,6 +4,7 @@ Hadoop Cluster Ansible Playbook
 This Ansible playbook automates the deployment of a Hadoop cluster. It sets up a single master node and multiple worker nodes with HDFS and YARN components.
 
 ### Requirements
+x86-64 Platform (arm64 does not work!)
 Ansible 2.19.2 or higher
 Ubuntu/Debian target machines
 SSH access to all nodes
@@ -18,7 +19,7 @@ ansible all -i inventory.yml -m ping -v
 ```
 ansible-playbook -i inventory.yml site.yml --syntax-check
 ```
-3. Dry run
+3. Dry run (тут будет failed из-за несуществующей директории /opt/hadoop, все нормально)
 ```
 ansible-playbook -i inventory.yml site.yml --check -v
 ```

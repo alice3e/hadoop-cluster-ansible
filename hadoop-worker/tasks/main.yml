@@ -38,7 +38,7 @@
   blockinfile:
     path: "/etc/profile.d/hadoop.sh"
     block: |
-      export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64
+      export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
       export HADOOP_HOME=/usr/local/hadoop
       export PATH=$PATH:$HADOOP_HOME/bin
       export PATH=$PATH:$HADOOP_HOME/sbin
@@ -63,7 +63,7 @@
     line: "{{ item }}"
     state: present
   loop:
-    - 'JAVA_HOME=/usr/lib/jvm/java-11-openjdk-arm64'
+    - 'JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64'
     - 'HDFS_DATANODE_USER={{ ansible_user }}'
     - 'YARN_NODEMANAGER_USER={{ ansible_user }}'
   notify:
