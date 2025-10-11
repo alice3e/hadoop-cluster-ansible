@@ -1,15 +1,10 @@
 <configuration>
   <property>
     <name>dfs.replication</name>
-    <value>2</value>
-  </property>
-  <property>
-    <name>dfs.namenode.name.dir</name>
-    <value>file:/usr/local/hadoop/hadoop_data/hdfs/namenode</value>
+    <value>{{ hdfs_replication | default(2) }}</value>
   </property>
   <property>
     <name>dfs.datanode.data.dir</name>
-    <value>file:/usr/local/hadoop/hadoop_data/hdfs/datanode</value>
+    <value>file:{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}/hdfs/datanode</value>
   </property>
 </configuration>
-

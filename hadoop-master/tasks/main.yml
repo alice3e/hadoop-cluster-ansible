@@ -59,32 +59,42 @@
 # https://cwiki.apache.org/confluence/display/HADOOP/Hadoop+Java+Versions -> Java 11 ONLY
 - name: Install required packages
   apt:
-    name: 
+    name:
       - openjdk-11-jdk
     state: present
+  become: yes
 
 - name: Download Hadoop
   get_url:
     url: "https://downloads.apache.org/hadoop/common/hadoop-{{ hadoop_version }}/hadoop-{{ hadoop_version }}.tar.gz"
     dest: "/tmp/hadoop-{{ hadoop_version }}.tar.gz"
     mode: '0755'
-    
+  become: yes
+
 - name: Create hadoop installer directory
   file:
     path: "{{ hadoop_install_dir }}"
     state: directory
-    
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+  become: yes
+
 - name: Extract Hadoop
   unarchive:
     src: "/tmp/hadoop-{{ hadoop_version }}.tar.gz"
     dest: "{{ hadoop_install_dir }}"
     remote_src: yes
+  become: yes
 
 - name: Create symbolic link for Hadoop
   file:
     src: "{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}"
     dest: "/usr/local/hadoop"
     state: link
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  become: yes
 
 - name: Set environment variables for Hadoop
   blockinfile:
@@ -99,13 +109,14 @@
       export HADOOP_HDFS_HOME=$HADOOP_HOME
       export YARN_HOME=$HADOOP_HOME
     create: yes
-    mode: "0755"  # Исправлен режим с 7055 на 0755
+    mode: "0755"
+  become: yes
 
 - name: Source Hadoop environment
   shell: "source /etc/profile.d/hadoop.sh"
   args:
     executable: /bin/bash
-    
+
 - name: Set environment variables in /etc/environment
   lineinfile:
     path: /etc/environment
@@ -121,11 +132,13 @@
   notify:
     - restart hadoop namenode
     - restart hadoop resourcemanager
+  become: yes
 
 - name: Download local variables from /etc/environment
   shell: source /etc/environment
   args:
     executable: /bin/bash
+  become: yes
 
 - name: Copy Hadoop configuration files
   template:
@@ -140,12 +153,27 @@
     - restart hadoop namenode
     - restart hadoop resourcemanager
     - restart hadoop historyserver
-    
+  become: yes
+
+# --- NEW TASK: render workers list from inventory ---
+- name: Render Hadoop workers file from inventory
+  copy:
+    dest: /usr/local/hadoop/etc/hadoop/workers
+    content: |
+      {% for host in groups['hadoop_worker'] %}
+      {{ hostvars[host]['ansible_host'] | default(host) }}
+      {% endfor %}
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+  become: yes
+
 - name: Format the Hadoop namenode
   command: "/usr/local/hadoop/bin/hdfs namenode -format"
   when: "'master' in group_names"
   notify:
     - restart hadoop namenode
+  become: yes
 
 - name: Set correct ownership for Hadoop directories
   file:

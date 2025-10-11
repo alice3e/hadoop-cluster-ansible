@@ -1,7 +1,6 @@
 <configuration>
   <property>
     <name>fs.defaultFS</name>
-    <value>hdfs://192.168.122.183:9000</value>
+    <value>hdfs://{{ hostvars[groups['hadoop_master'][0]]['ansible_host'] | default(groups['hadoop_master'][0]) }}:9000</value>
   </property>
 </configuration>
-
