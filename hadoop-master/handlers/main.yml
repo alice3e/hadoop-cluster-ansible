@@ -3,9 +3,9 @@
   become: yes
   become_user: "{{ ansible_user }}"
   shell: >
-    . /etc/profile.d/hadoop.sh || true
-    && /usr/local/hadoop/bin/hdfs --daemon stop namenode || true
-    && /usr/local/hadoop/bin/hdfs --daemon start namenode
+    . /etc/profile.d/hadoop.sh
+    /usr/local/hadoop/bin/hdfs --daemon stop namenode
+    /usr/local/hadoop/bin/hdfs --daemon start namenode
   args:
     executable: /bin/bash
 
@@ -13,9 +13,9 @@
   become: yes
   become_user: "{{ ansible_user }}"
   shell: >
-    . /etc/profile.d/hadoop.sh || true
-    && /usr/local/hadoop/bin/yarn --daemon stop resourcemanager || true
-    && /usr/local/hadoop/bin/yarn --daemon start resourcemanager
+    . /etc/profile.d/hadoop.sh
+    /usr/local/hadoop/bin/yarn --daemon stop resourcemanager
+    /usr/local/hadoop/bin/yarn --daemon start resourcemanager
   args:
     executable: /bin/bash
 
@@ -23,8 +23,8 @@
   become: yes
   become_user: "{{ ansible_user }}"
   shell: >
-    . /etc/profile.d/hadoop.sh || true
-    && /usr/local/hadoop/bin/mapred --daemon stop historyserver || true
-    && /usr/local/hadoop/bin/mapred --daemon start historyserver
+    . /etc/profile.d/hadoop.sh
+    /usr/local/hadoop/bin/mapred --daemon stop historyserver
+    /usr/local/hadoop/bin/mapred --daemon start historyserver
   args:
     executable: /bin/bash

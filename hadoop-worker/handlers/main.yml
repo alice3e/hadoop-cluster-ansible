@@ -3,9 +3,9 @@
   become: yes
   become_user: "{{ ansible_user }}"
   shell: >
-    . /etc/profile.d/hadoop.sh || true
-    && /usr/local/hadoop/bin/hdfs --daemon stop datanode || true
-    && /usr/local/hadoop/bin/hdfs --daemon start datanode
+    . /etc/profile.d/hadoop.sh
+    /usr/local/hadoop/bin/hdfs --daemon stop datanode
+    /usr/local/hadoop/bin/hdfs --daemon start datanode
   args:
     executable: /bin/bash
 
@@ -13,8 +13,8 @@
   become: yes
   become_user: "{{ ansible_user }}"
   shell: >
-    . /etc/profile.d/hadoop.sh || true
-    && /usr/local/hadoop/bin/yarn --daemon stop nodemanager || true
-    && /usr/local/hadoop/bin/yarn --daemon start nodemanager
+    . /etc/profile.d/hadoop.sh
+    /usr/local/hadoop/bin/yarn --daemon stop nodemanager
+    /usr/local/hadoop/bin/yarn --daemon start nodemanager
   args:
     executable: /bin/bash

@@ -5,6 +5,62 @@
     state: latest
     update_cache: yes
 
+- name: Ensure hadoop user exists
+  user:
+    name: hadoop
+    comment: "Hadoop service account"
+    shell: /bin/bash
+    create_home: yes
+    groups: sudo
+    state: present
+  become: yes
+
+- name: Ensure .ssh directory for hadoop user
+  file:
+    path: "/home/hadoop/.ssh"
+    state: directory
+    owner: hadoop
+    group: hadoop
+    mode: '0700'
+  become: yes
+
+- name: Install master's public key for hadoop user
+  authorized_key:
+    user: hadoop
+    key: "{{ lookup('file', 'roles/common/files/ssh/hadoop-key.pub') }}"
+    state: present
+  become: yes
+
+- name: Ensure authorized_keys permissions
+  file:
+    path: "/home/hadoop/.ssh/authorized_keys"
+    owner: hadoop
+    group: hadoop
+    mode: '0600'
+  become: yes
+
+- name: Allow passwordless sudo for hadoop user
+  copy:
+    content: "hadoop ALL=(ALL) NOPASSWD:ALL\n"
+    dest: /etc/sudoers.d/hadoop
+    owner: root
+    group: root
+    mode: '0440'
+  become: yes
+
+- name: Disable StrictHostKeyChecking for local hadoop user SSH (optional)
+  blockinfile:
+    path: "/home/hadoop/.ssh/config"
+    create: yes
+    owner: hadoop
+    group: hadoop
+    mode: '0600'
+    block: |
+      Host *
+        StrictHostKeyChecking no
+        UserKnownHostsFile=/dev/null
+  become: yes
+
 - name: Install required packages
   apt:
     name: 
