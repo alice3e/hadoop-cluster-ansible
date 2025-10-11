@@ -2,19 +2,19 @@
 hadoop_master:
   hosts:
     master:
-      ansible_host: 192.168.56.2
+      ansible_host: 51.250.91.208
 
 hadoop_worker:
   hosts:
     worker01:
-      ansible_host: 192.168.56.4
+      ansible_host: 158.160.122.31
     worker02:
-      ansible_host: 192.168.56.3
+      ansible_host: 158.160.100.168
 
 all:
   vars:
     ansible_user: alice3e
-    ansible_password: asd
+    ansible_private_key_file: /Users/alice3e/.ssh/homelab-only-key
     ansible_become: yes
     ansible_become_method: sudo
     hadoop_version: 3.4.1

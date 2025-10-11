@@ -6,6 +6,7 @@
     state: latest
     update_cache: yes
 
+# https://cwiki.apache.org/confluence/display/HADOOP/Hadoop+Java+Versions -> Java 11 ONLY
 - name: Install required packages
   apt:
     name: 
