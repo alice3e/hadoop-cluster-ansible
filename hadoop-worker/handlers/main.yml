@@ -1,10 +1,20 @@
 ---
 - name: restart hadoop datanode
-  service:
-    name: hadoop-datanode
-    state: restarted
+  become: yes
+  become_user: "{{ ansible_user }}"
+  shell: >
+    . /etc/profile.d/hadoop.sh || true
+    && /usr/local/hadoop/bin/hdfs --daemon stop datanode || true
+    && /usr/local/hadoop/bin/hdfs --daemon start datanode
+  args:
+    executable: /bin/bash
 
 - name: restart hadoop nodemanager
-  service:
-    name: hadoop-nodemanager
-    state: restarted
+  become: yes
+  become_user: "{{ ansible_user }}"
+  shell: >
+    . /etc/profile.d/hadoop.sh || true
+    && /usr/local/hadoop/bin/yarn --daemon stop nodemanager || true
+    && /usr/local/hadoop/bin/yarn --daemon start nodemanager
+  args:
+    executable: /bin/bash

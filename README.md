@@ -11,19 +11,21 @@ SSH access to all nodes
 Python 3.x on target machines
 
 ### Quick Start
+0. generate new hadoop key
+
 1. Check connectivity to all nodes
 ```
 ansible all -i inventory.yml -m ping -v
 ```
-2. Validate playbook syntax
+1. Validate playbook syntax
 ```
 ansible-playbook -i inventory.yml site.yml --syntax-check
 ```
-3. Dry run (тут будет failed из-за несуществующей директории /opt/hadoop, все нормально)
+1. Dry run (тут будет failed из-за несуществующей директории /opt/hadoop, все нормально)
 ```
 ansible-playbook -i inventory.yml site.yml --check -v
 ```
-4. Deploy cluster
+1. Deploy cluster
 ```
 # Deploy master node first
 ansible-playbook -i inventory.yml site.yml --limit hadoop_master -v

@@ -1,15 +1,30 @@
 ---
 - name: restart hadoop namenode
-  service:
-    name: hadoop-namenode
-    state: restarted
+  become: yes
+  become_user: "{{ ansible_user }}"
+  shell: >
+    . /etc/profile.d/hadoop.sh || true
+    && /usr/local/hadoop/bin/hdfs --daemon stop namenode || true
+    && /usr/local/hadoop/bin/hdfs --daemon start namenode
+  args:
+    executable: /bin/bash
 
 - name: restart hadoop resourcemanager
-  service:
-    name: hadoop-resourcemanager
-    state: restarted
+  become: yes
+  become_user: "{{ ansible_user }}"
+  shell: >
+    . /etc/profile.d/hadoop.sh || true
+    && /usr/local/hadoop/bin/yarn --daemon stop resourcemanager || true
+    && /usr/local/hadoop/bin/yarn --daemon start resourcemanager
+  args:
+    executable: /bin/bash
 
 - name: restart hadoop historyserver
-  service:
-    name: hadoop-historyserver
-    state: restarted
+  become: yes
+  become_user: "{{ ansible_user }}"
+  shell: >
+    . /etc/profile.d/hadoop.sh || true
+    && /usr/local/hadoop/bin/mapred --daemon stop historyserver || true
+    && /usr/local/hadoop/bin/mapred --daemon start historyserver
+  args:
+    executable: /bin/bash

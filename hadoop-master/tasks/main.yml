@@ -6,6 +6,56 @@
     state: latest
     update_cache: yes
 
+- name: Create .ssh directory
+  file:
+    path: "/home/{{ ansible_user }}/.ssh"
+    state: directory
+    mode: '0700'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  become: yes
+
+- name: Copy SSH private key
+  copy:
+    src: "roles/common/files/ssh/hadoop-key"
+    dest: "/home/{{ ansible_user }}/.ssh/id_rsa"
+    mode: '0600'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  become: yes
+
+- name: Copy SSH public key
+  copy:
+    src: "roles/common/files/ssh/hadoop-key.pub"
+    dest: "/home/{{ ansible_user }}/.ssh/id_rsa.pub"
+    mode: '0644'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  become: yes
+
+- name: Add SSH key to authorized_keys
+  authorized_key:
+    user: "{{ ansible_user }}"
+    key: "{{ lookup('file', 'roles/common/files/ssh/hadoop-key.pub') }}"
+    state: present
+  become: yes
+
+- name: Configure SSH for localhost connections
+  blockinfile:
+    path: "/home/{{ ansible_user }}/.ssh/config"
+    create: yes
+    mode: '0600'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    block: |
+      Host localhost
+        StrictHostKeyChecking no
+        UserKnownHostsFile=/dev/null
+      Host master worker*
+        StrictHostKeyChecking no
+        UserKnownHostsFile=/dev/null
+  become: yes
+
 # https://cwiki.apache.org/confluence/display/HADOOP/Hadoop+Java+Versions -> Java 11 ONLY
 - name: Install required packages
   apt:
@@ -96,6 +146,20 @@
   when: "'master' in group_names"
   notify:
     - restart hadoop namenode
+
+- name: Set correct ownership for Hadoop directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+    recurse: yes
+  loop:
+    - "{{ hadoop_install_dir }}"
+    - "/usr/local/hadoop"
+    - "{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}/logs"
+  become: yes
 
 - name: Start HDFS daemons
   shell: /usr/local/hadoop/sbin/start-dfs.sh
