@@ -2,20 +2,21 @@
 hadoop_master:
   hosts:
     master:
-      ansible_host: 51.250.91.208
+      ansible_host: 51.250.91.208  # YOUR IP HERE
 
 hadoop_worker:
   hosts:
     worker01:
-      ansible_host: 158.160.122.31
+      ansible_host: 158.160.122.31  # YOUR IP HERE
     worker02:
-      ansible_host: 158.160.100.168
+      ansible_host: 158.160.100.168  # YOUR IP HERE
 
 all:
   vars:
-    ansible_user: alice3e
-    ansible_private_key_file: /Users/alice3e/.ssh/homelab-only-key
+    ansible_user: alice3e # YOUR USERNAME HERE
+    ansible_private_key_file: /Users/alice3e/.ssh/homelab-only-key # YOUR KEY HERE
     ansible_become: yes
     ansible_become_method: sudo
     hadoop_version: 3.4.1
     hadoop_install_dir: /opt/hadoop
+    # ALSO CHANGE KEY IN /roles/common/files/ssh
