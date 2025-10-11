@@ -1,30 +1,36 @@
 ---
-- name: restart hadoop namenode
+# handlers file
+
+- name: start hadoop cluster hdfs
+  command: /usr/local/hadoop/sbin/start-dfs.sh
   become: yes
   become_user: "{{ ansible_user }}"
-  shell: >
-    . /etc/profile.d/hadoop.sh
-    /usr/local/hadoop/bin/hdfs --daemon stop namenode
-    /usr/local/hadoop/bin/hdfs --daemon start namenode
-  args:
-    executable: /bin/bash
+
+- name: start hadoop cluster yarn
+  command: /usr/local/hadoop/sbin/start-yarn.sh
+  become: yes
+  become_user: "{{ ansible_user }}"
+
+- name: restart hadoop namenode
+  command: "{{ item }}"
+  loop:
+    - /usr/local/hadoop/bin/hdfs --daemon stop namenode
+    - /usr/local/hadoop/bin/hdfs --daemon start namenode
+  become: yes
+  become_user: "{{ ansible_user }}"
 
 - name: restart hadoop resourcemanager
+  command: "{{ item }}"
+  loop:
+    - /usr/local/hadoop/bin/yarn --daemon stop resourcemanager
+    - /usr/local/hadoop/bin/yarn --daemon start resourcemanager
   become: yes
   become_user: "{{ ansible_user }}"
-  shell: >
-    . /etc/profile.d/hadoop.sh
-    /usr/local/hadoop/bin/yarn --daemon stop resourcemanager
-    /usr/local/hadoop/bin/yarn --daemon start resourcemanager
-  args:
-    executable: /bin/bash
 
 - name: restart hadoop historyserver
+  command: "{{ item }}"
+  loop:
+    - /usr/local/hadoop/bin/mapred --daemon stop historyserver
+    - /usr/local/hadoop/bin/mapred --daemon start historyserver
   become: yes
   become_user: "{{ ansible_user }}"
-  shell: >
-    . /etc/profile.d/hadoop.sh
-    /usr/local/hadoop/bin/mapred --daemon stop historyserver
-    /usr/local/hadoop/bin/mapred --daemon start historyserver
-  args:
-    executable: /bin/bash

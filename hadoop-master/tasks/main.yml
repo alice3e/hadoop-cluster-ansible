@@ -1,63 +1,50 @@
 ---
 # tasks file for hadoop-master
+
 - name: Update linux apt
   ansible.builtin.apt:
     name: "*"
     state: latest
     update_cache: yes
+  become: yes
 
+# --- БЛОК SSH ---
 - name: Create .ssh directory
   file:
     path: "/home/{{ ansible_user }}/.ssh"
     state: directory
     mode: '0700'
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-  become: yes
 
 - name: Copy SSH private key
   copy:
     src: "roles/common/files/ssh/hadoop-key"
     dest: "/home/{{ ansible_user }}/.ssh/id_rsa"
     mode: '0600'
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-  become: yes
 
 - name: Copy SSH public key
   copy:
     src: "roles/common/files/ssh/hadoop-key.pub"
     dest: "/home/{{ ansible_user }}/.ssh/id_rsa.pub"
     mode: '0644'
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-  become: yes
 
 - name: Add SSH key to authorized_keys
   authorized_key:
     user: "{{ ansible_user }}"
     key: "{{ lookup('file', 'roles/common/files/ssh/hadoop-key.pub') }}"
     state: present
-  become: yes
 
-- name: Configure SSH for localhost connections
+- name: Configure SSH for seamless cluster communication
   blockinfile:
     path: "/home/{{ ansible_user }}/.ssh/config"
     create: yes
     mode: '0600'
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
     block: |
-      Host localhost
+      Host localhost master worker*
         StrictHostKeyChecking no
         UserKnownHostsFile=/dev/null
-      Host master worker*
-        StrictHostKeyChecking no
-        UserKnownHostsFile=/dev/null
-  become: yes
+# --- КОНЕЦ БЛОКА SSH ---
 
-# https://cwiki.apache.org/confluence/display/HADOOP/Hadoop+Java+Versions -> Java 11 ONLY
-- name: Install required packages
+- name: Install required packages (OpenJDK 11)
   apt:
     name:
       - openjdk-11-jdk
@@ -69,34 +56,29 @@
     url: "https://downloads.apache.org/hadoop/common/hadoop-{{ hadoop_version }}/hadoop-{{ hadoop_version }}.tar.gz"
     dest: "/tmp/hadoop-{{ hadoop_version }}.tar.gz"
     mode: '0755'
-  become: yes
 
-- name: Create hadoop installer directory
+
+- name: Create hadoop installation directory
   file:
-    path: "{{ hadoop_install_dir }}"
+    path: "{{ hadoop_install_dir }}" 
     state: directory
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
     mode: '0755'
-  become: yes
 
-- name: Extract Hadoop
+- name: Extract Hadoop archive
   unarchive:
     src: "/tmp/hadoop-{{ hadoop_version }}.tar.gz"
     dest: "{{ hadoop_install_dir }}"
     remote_src: yes
-  become: yes
 
-- name: Create symbolic link for Hadoop
+
+- name: Create symbolic link for Hadoop in /usr/local
   file:
     src: "{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}"
     dest: "/usr/local/hadoop"
     state: link
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
   become: yes
 
-- name: Set environment variables for Hadoop
+- name: Set system-wide environment variables for Hadoop
   blockinfile:
     path: "/etc/profile.d/hadoop.sh"
     block: |
@@ -112,32 +94,19 @@
     mode: "0755"
   become: yes
 
-- name: Source Hadoop environment
-  shell: "source /etc/profile.d/hadoop.sh"
-  args:
-    executable: /bin/bash
-
-- name: Set environment variables in /etc/environment
+- name: Set environment variables for non-interactive sessions
   lineinfile:
     path: /etc/environment
-    line: "{{ item }}"
+    regexp: "^{{ item.key }}="
+    line: "{{ item.key }}={{ item.value }}"
     state: present
   loop:
-    - 'JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64'
-    - 'HDFS_SECONDARYNAMENODE_USER={{ ansible_user }}'
-    - 'HDFS_NAMENODE_USER={{ ansible_user }}'
-    - 'HDFS_DATANODE_USER={{ ansible_user }}'
-    - 'YARN_NODEMANAGER_USER={{ ansible_user }}'
-    - 'YARN_RESOURCEMANAGER_USER={{ ansible_user }}'
-  notify:
-    - restart hadoop namenode
-    - restart hadoop resourcemanager
-  become: yes
-
-- name: Download local variables from /etc/environment
-  shell: source /etc/environment
-  args:
-    executable: /bin/bash
+    - { key: 'JAVA_HOME', value: '/usr/lib/jvm/java-11-openjdk-amd64' }
+    - { key: 'HDFS_NAMENODE_USER', value: '{{ ansible_user }}' }
+    - { key: 'HDFS_SECONDARYNAMENODE_USER', value: '{{ ansible_user }}' }
+    - { key: 'HDFS_DATANODE_USER', value: '{{ ansible_user }}' }
+    - { key: 'YARN_NODEMANAGER_USER', value: '{{ ansible_user }}' }
+    - { key: 'YARN_RESOURCEMANAGER_USER', value: '{{ ansible_user }}' }
   become: yes
 
 - name: Copy Hadoop configuration files
@@ -155,7 +124,6 @@
     - restart hadoop historyserver
   become: yes
 
-# --- NEW TASK: render workers list from inventory ---
 - name: Render Hadoop workers file from inventory
   copy:
     dest: /usr/local/hadoop/etc/hadoop/workers
@@ -163,36 +131,30 @@
       {% for host in groups['hadoop_worker'] %}
       {{ hostvars[host]['ansible_host'] | default(host) }}
       {% endfor %}
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
     mode: '0644'
   become: yes
 
-- name: Format the Hadoop namenode
-  command: "/usr/local/hadoop/bin/hdfs namenode -format"
-  when: "'master' in group_names"
-  notify:
-    - restart hadoop namenode
-  become: yes
-
-- name: Set correct ownership for Hadoop directories
+- name: Set correct ownership for all Hadoop files
   file:
-    path: "{{ item }}"
+    path: "/usr/local/hadoop"
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-    mode: '0755'
     recurse: yes
-  loop:
-    - "{{ hadoop_install_dir }}"
-    - "/usr/local/hadoop"
-    - "{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}/logs"
   become: yes
 
-- name: Start HDFS daemons
-  shell: /usr/local/hadoop/sbin/start-dfs.sh
-  become: true
+- name: Check if NameNode is already formatted
+  stat:
+    path: "/usr/local/hadoop/hdfs/namenode/current"
+  register: namenode_dir_stat
 
-- name: Start YARN daemons
-  shell: /usr/local/hadoop/sbin/start-yarn.sh
-  become: true
+- name: Format the Hadoop namenode (only once)
+  command: "/usr/local/hadoop/bin/hdfs namenode -format"
+  when:
+    - "'master' in group_names"
+    - not namenode_dir_stat.stat.exists
+  become: yes
+  become_user: "{{ ansible_user }}"
+  notify:
+    - start hadoop cluster hdfs
+    - start hadoop cluster yarn
