@@ -3,7 +3,7 @@
 ## Архитектура кластера
 
 ### Узлы кластера:
-- **Master Node** (10.128.0.29 / 158.160.47.11)
+- **Master Node** (10.128.0.10 / 158.160.47.11)
   - NameNode (HDFS)
   - ResourceManager (YARN)
   - HistoryServer (MapReduce)
@@ -305,7 +305,7 @@ ansible all -i inventory.yml -m shell -a "cat /etc/hosts | grep -E '10.128.0'"
 
 2. Проверьте доступность NameNode с worker:
 ```bash
-ssh alice3e@158.160.122.31 "telnet 10.128.0.29 9000"
+ssh alice3e@158.160.122.31 "telnet 10.128.0.10 9000"
 ```
 
 3. Проверьте конфигурацию в `core-site.xml`:
@@ -327,7 +327,7 @@ ssh alice3e@158.160.122.31 "/usr/local/hadoop/bin/hdfs --daemon stop datanode &&
 **Решение:**
 1. Проверьте доступность ResourceManager:
 ```bash
-ssh alice3e@158.160.122.31 "telnet 10.128.0.29 8032"
+ssh alice3e@158.160.122.31 "telnet 10.128.0.10 8032"
 ```
 
 2. Проверьте конфигурацию в `yarn-site.xml`:
@@ -377,7 +377,7 @@ ansible-playbook -i inventory.yml site.yml -v
 
 **Симптомы:**
 - HistoryServer постоянно пытается подключиться к HDFS
-- В логах: "Waiting for FileSystem at 10.128.0.29:9000 to be available"
+- В логах: "Waiting for FileSystem at 10.128.0.10:9000 to be available"
 
 **Решение:**
 1. Убедитесь, что NameNode запущен:
@@ -394,58 +394,3 @@ ssh alice3e@158.160.47.11 "ss -tulpn | grep 9000"
 ```bash
 ssh alice3e@158.160.47.11 "/usr/local/hadoop/bin/mapred --daemon stop historyserver && sleep 2 && /usr/local/hadoop/bin/mapred --daemon start historyserver"
 ```
-
-## Важные файлы и директории
-
-- **Конфигурация:** `/usr/local/hadoop/etc/hadoop/`
-- **Логи:** `/usr/local/hadoop/logs/`
-- **HDFS данные:** `/opt/hadoop/hadoop-3.4.1/hdfs/`
-- **YARN данные:** `/usr/local/hadoop/yarn/`
-- **Временные файлы:** `/tmp/hadoop-alice3e/`
-- **Переменные окружения:** `/etc/profile.d/hadoop.sh`
-
-## Мониторинг
-
-### Проверка статуса всех сервисов
-
-Создайте скрипт для быстрой проверки:
-```bash
-cat > check-cluster.sh << 'EOF'
-#!/bin/bash
-echo "=== Master Node ==="
-ssh alice3e@158.160.47.11 "jps"
-echo ""
-echo "=== Worker01 ==="
-ssh alice3e@158.160.122.31 "jps"
-echo ""
-echo "=== Worker02 ==="
-ssh alice3e@158.160.100.168 "jps"
-echo ""
-echo "=== HDFS Report ==="
-ssh alice3e@158.160.47.11 "hdfs dfsadmin -report | head -20"
-echo ""
-echo "=== YARN Nodes ==="
-ssh alice3e@158.160.47.11 "yarn node -list"
-EOF
-
-chmod +x check-cluster.sh
-./check-cluster.sh
-```
-
-## Безопасность
-
-### Рекомендации:
-1. Используйте firewall для ограничения доступа к портам Hadoop
-2. Настройте Kerberos для аутентификации (для production)
-3. Включите SSL/TLS для веб-интерфейсов
-4. Регулярно обновляйте Hadoop и Java
-5. Используйте отдельные SSH ключи для разных окружений
-
-## Производительность
-
-### Рекомендации по настройке:
-1. Увеличьте `dfs.replication` для критичных данных
-2. Настройте `yarn.nodemanager.resource.memory-mb` в зависимости от RAM
-3. Настройте `yarn.nodemanager.resource.cpu-vcores` в зависимости от CPU
-4. Используйте SSD для HDFS DataNode директорий
-5. Мониторьте использование ресурсов через веб-интерфейсы
