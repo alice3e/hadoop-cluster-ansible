@@ -1,0 +1,42 @@
+---
+# Common tasks for all Hadoop nodes
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  become: yes
+
+- name: Install required packages
+  apt:
+    name:
+      - openjdk-11-jdk
+      - python3
+      - rsync
+    state: present
+  become: yes
+
+- name: Create .ssh directory
+  file:
+    path: "/home/{{ ansible_user }}/.ssh"
+    state: directory
+    mode: '0700'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Add Hadoop SSH public key to authorized_keys
+  authorized_key:
+    user: "{{ ansible_user }}"
+    key: "{{ lookup('file', 'files/ssh/hadoop-key.pub') }}"
+    state: present
+
+- name: Configure /etc/hosts for internal communication
+  blockinfile:
+    path: /etc/hosts
+    block: |
+      {{ hostvars['master']['internal_ip'] }} master
+      {% for host in groups['hadoop_worker'] %}
+      {{ hostvars[host]['internal_ip'] }} {{ host }}
+      {% endfor %}
+    marker: "# {mark} ANSIBLE MANAGED HADOOP CLUSTER HOSTS"
+  become: yes

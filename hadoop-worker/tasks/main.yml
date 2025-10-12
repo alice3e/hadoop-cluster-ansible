@@ -1,30 +1,5 @@
 ---
 # tasks file for hadoop-worker
-- name: Update linux apt
-  ansible.builtin.apt:
-    name: "*"
-    state: latest
-    update_cache: yes
-  become: yes
-
-- name: Ensure .ssh directory exists
-  file:
-    path: "/home/{{ ansible_user }}/.ssh"
-    state: directory
-    mode: '0700'
-
-- name: Install master's public key for passwordless SSH
-  authorized_key:
-    user: "{{ ansible_user }}"
-    key: "{{ lookup('file', 'roles/common/files/ssh/hadoop-key.pub') }}"
-    state: present
-
-- name: Install required packages (OpenJDK 11)
-  apt:
-    name:
-      - openjdk-11-jdk
-    state: present
-  become: yes
 
 - name: Download Hadoop
   get_url:

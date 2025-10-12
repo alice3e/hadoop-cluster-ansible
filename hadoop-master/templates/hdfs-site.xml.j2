@@ -18,6 +18,6 @@
   </property>
   <property>
     <name>dfs.namenode.rpc-address</name>
-    <value>{{ hostvars[groups['hadoop_master'][0]]['ansible_default_ipv4']['address'] }}:9000</value>
+    <value>{{ hostvars[groups['hadoop_master'][0]]['internal_ip'] }}:9000</value>
   </property>
 </configuration>

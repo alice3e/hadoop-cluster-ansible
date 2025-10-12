@@ -1,55 +1,35 @@
 ---
 # tasks file for hadoop-master
 
-- name: Update linux apt
-  ansible.builtin.apt:
-    name: "*"
-    state: latest
-    update_cache: yes
-  become: yes
-
 # --- БЛОК SSH ---
-- name: Create .ssh directory
-  file:
-    path: "/home/{{ ansible_user }}/.ssh"
-    state: directory
-    mode: '0700'
-
 - name: Copy SSH private key
   copy:
     src: "roles/common/files/ssh/hadoop-key"
     dest: "/home/{{ ansible_user }}/.ssh/id_rsa"
     mode: '0600'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
 
 - name: Copy SSH public key
   copy:
     src: "roles/common/files/ssh/hadoop-key.pub"
     dest: "/home/{{ ansible_user }}/.ssh/id_rsa.pub"
     mode: '0644'
-
-- name: Add SSH key to authorized_keys
-  authorized_key:
-    user: "{{ ansible_user }}"
-    key: "{{ lookup('file', 'roles/common/files/ssh/hadoop-key.pub') }}"
-    state: present
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
 
 - name: Configure SSH for seamless cluster communication
   blockinfile:
     path: "/home/{{ ansible_user }}/.ssh/config"
     create: yes
     mode: '0600'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     block: |
       Host localhost master worker*
         StrictHostKeyChecking no
         UserKnownHostsFile=/dev/null
 # --- КОНЕЦ БЛОКА SSH ---
-
-- name: Install required packages (OpenJDK 11)
-  apt:
-    name:
-      - openjdk-11-jdk
-    state: present
-  become: yes
 
 - name: Download Hadoop
   get_url:
@@ -129,9 +109,11 @@
     dest: /usr/local/hadoop/etc/hadoop/workers
     content: |
       {% for host in groups['hadoop_worker'] %}
-      {{ hostvars[host]['ansible_host'] | default(host) }}
+      {{ hostvars[host]['internal_ip'] }}
       {% endfor %}
     mode: '0644'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   become: yes
 
 - name: Set correct ownership for all Hadoop files

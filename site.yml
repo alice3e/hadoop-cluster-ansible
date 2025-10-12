@@ -1,4 +1,10 @@
 ---
+- name: Setup common configuration for all nodes
+  hosts: all
+  become: true
+  roles:
+    - common
+
 - name: Configure hadoop master
   hosts: hadoop_master
   become: true
