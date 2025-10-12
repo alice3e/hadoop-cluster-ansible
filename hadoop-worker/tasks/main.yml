@@ -26,6 +26,14 @@
     state: link
   become: yes
 
+- name: Configure JAVA_HOME in hadoop-env.sh
+  lineinfile:
+    path: "/usr/local/hadoop/etc/hadoop/hadoop-env.sh"
+    regexp: '^export JAVA_HOME='
+    line: 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64'
+    state: present
+  become: yes
+
 - name: Set system-wide environment variables for Hadoop
   blockinfile:
     path: "/etc/profile.d/hadoop.sh"
@@ -34,10 +42,10 @@
       export HADOOP_HOME=/usr/local/hadoop
       export PATH=$PATH:$HADOOP_HOME/bin
       export PATH=$PATH:$HADOOP_HOME/sbin
-      # Переменные MASTER-демонов здесь не нужны
       export HADOOP_COMMON_HOME=$HADOOP_HOME
       export HADOOP_HDFS_HOME=$HADOOP_HOME
       export YARN_HOME=$HADOOP_HOME
+      export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
     create: yes
     mode: "0755"
   become: yes
@@ -80,3 +88,38 @@
     group: "{{ ansible_user }}"
     recurse: yes
   become: yes
+
+- name: Set correct ownership for Hadoop files
+  file:
+    path: "/opt/hadoop"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    recurse: yes
+  become: yes
+
+- name: Wait for NameNode to be available
+  wait_for:
+    host: "{{ hostvars[groups['hadoop_master'][0]]['internal_ip'] }}"
+    port: 9000
+    delay: 5
+    timeout: 120
+    state: started
+
+- name: Start HDFS DataNode
+  shell: |
+    source /etc/profile.d/hadoop.sh
+    /usr/local/hadoop/bin/hdfs --daemon start datanode
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ ansible_user }}"
+
+- name: Start YARN NodeManager
+  shell: |
+    source /etc/profile.d/hadoop.sh
+    /usr/local/hadoop/bin/yarn --daemon start nodemanager
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ ansible_user }}"

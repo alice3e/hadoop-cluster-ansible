@@ -2,17 +2,17 @@
 hadoop_master:
   hosts:
     master:
-      ansible_host: 51.250.91.208  # Public IP for Ansible connection
-      internal_ip: 10.128.0.29     # Internal IP for Hadoop communication
+      ansible_host: 158.160.47.11 # Public IP for Ansible connection
+      internal_ip: 10.128.0.10     # Internal IP for Hadoop communication
 
 hadoop_worker:
   hosts:
     worker01:
-      ansible_host: 158.160.122.31  # Public IP for Ansible connection
-      internal_ip: 10.128.0.11      # Internal IP for Hadoop communication
+      ansible_host: 89.169.140.67  # Public IP for Ansible connection
+      internal_ip: 10.128.0.33      # Internal IP for Hadoop communication
     worker02:
-      ansible_host: 158.160.100.168 # Public IP for Ansible connection
-      internal_ip: 10.128.0.4       # Internal IP for Hadoop communication
+      ansible_host: 130.193.38.32 # Public IP for Ansible connection
+      internal_ip: 10.128.0.8       # Internal IP for Hadoop communication
 
 all:
   vars:
