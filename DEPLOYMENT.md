@@ -3,7 +3,7 @@
 ## Архитектура кластера
 
 ### Узлы кластера:
-- **Master Node** (10.128.0.29 / 51.250.91.208)
+- **Master Node** (10.128.0.29 / 158.160.47.11)
   - NameNode (HDFS)
   - ResourceManager (YARN)
   - HistoryServer (MapReduce)
@@ -66,7 +66,7 @@ ansible-playbook -i inventory.yml site.yml --syntax-check
 
 ```bash
 # На master node
-ssh alice3e@51.250.91.208 "pkill -f hadoop; pkill -f yarn"
+ssh alice3e@158.160.47.11 "pkill -f hadoop; pkill -f yarn"
 
 # На worker nodes
 ssh alice3e@158.160.122.31 "pkill -f hadoop; pkill -f yarn"
@@ -95,7 +95,7 @@ Playbook выполнит следующие действия:
 
 На master node:
 ```bash
-ssh alice3e@51.250.91.208 "jps"
+ssh alice3e@158.160.47.11 "jps"
 ```
 Должны быть запущены:
 - NameNode
@@ -117,7 +117,7 @@ ssh alice3e@158.160.100.168 "jps"
 
 На master node:
 ```bash
-ssh alice3e@51.250.91.208 "ss -tulpn | grep java"
+ssh alice3e@158.160.47.11 "ss -tulpn | grep java"
 ```
 
 Должны быть открыты порты:
@@ -132,7 +132,7 @@ ssh alice3e@51.250.91.208 "ss -tulpn | grep java"
 
 Подключитесь к master node:
 ```bash
-ssh alice3e@51.250.91.208
+ssh alice3e@158.160.47.11
 ```
 
 Проверьте статус HDFS:
@@ -164,7 +164,7 @@ Total Nodes:2
 
 **HDFS NameNode UI:**
 ```
-http://51.250.91.208:9870
+http://158.160.47.11:9870
 ```
 Проверьте:
 - Overview → Live Nodes: должно быть 2
@@ -172,14 +172,14 @@ http://51.250.91.208:9870
 
 **YARN ResourceManager UI:**
 ```
-http://51.250.91.208:8088
+http://158.160.47.11:8088
 ```
 Проверьте:
 - Cluster → Nodes → Active Nodes: должно быть 2
 
 **MapReduce HistoryServer UI:**
 ```
-http://51.250.91.208:19888
+http://158.160.47.11:19888
 ```
 
 ## Управление кластером
@@ -233,7 +233,7 @@ ansible-playbook -i inventory.yml site.yml --limit hadoop_worker --tags restart 
 
 ### Тест 1: Создание директории в HDFS
 ```bash
-ssh alice3e@51.250.91.208
+ssh alice3e@158.160.47.11
 hdfs dfs -mkdir -p /user/alice3e/test
 hdfs dfs -ls /user/alice3e
 ```
@@ -345,17 +345,17 @@ ssh alice3e@158.160.122.31 "/usr/local/hadoop/bin/yarn --daemon stop nodemanager
 **Решение:**
 1. Проверьте логи:
 ```bash
-ssh alice3e@51.250.91.208 "tail -100 /usr/local/hadoop/logs/hadoop-alice3e-namenode-*.log"
+ssh alice3e@158.160.47.11 "tail -100 /usr/local/hadoop/logs/hadoop-alice3e-namenode-*.log"
 ```
 
 2. Проверьте переменные окружения:
 ```bash
-ssh alice3e@51.250.91.208 "source /etc/profile.d/hadoop.sh && env | grep HADOOP"
+ssh alice3e@158.160.47.11 "source /etc/profile.d/hadoop.sh && env | grep HADOOP"
 ```
 
 3. Проверьте JAVA_HOME:
 ```bash
-ssh alice3e@51.250.91.208 "grep JAVA_HOME /usr/local/hadoop/etc/hadoop/hadoop-env.sh"
+ssh alice3e@158.160.47.11 "grep JAVA_HOME /usr/local/hadoop/etc/hadoop/hadoop-env.sh"
 ```
 
 ### Проблема: "Address already in use"
@@ -382,17 +382,17 @@ ansible-playbook -i inventory.yml site.yml -v
 **Решение:**
 1. Убедитесь, что NameNode запущен:
 ```bash
-ssh alice3e@51.250.91.208 "jps | grep NameNode"
+ssh alice3e@158.160.47.11 "jps | grep NameNode"
 ```
 
 2. Проверьте доступность порта 9000:
 ```bash
-ssh alice3e@51.250.91.208 "ss -tulpn | grep 9000"
+ssh alice3e@158.160.47.11 "ss -tulpn | grep 9000"
 ```
 
 3. Перезапустите HistoryServer:
 ```bash
-ssh alice3e@51.250.91.208 "/usr/local/hadoop/bin/mapred --daemon stop historyserver && sleep 2 && /usr/local/hadoop/bin/mapred --daemon start historyserver"
+ssh alice3e@158.160.47.11 "/usr/local/hadoop/bin/mapred --daemon stop historyserver && sleep 2 && /usr/local/hadoop/bin/mapred --daemon start historyserver"
 ```
 
 ## Важные файлы и директории
@@ -413,7 +413,7 @@ ssh alice3e@51.250.91.208 "/usr/local/hadoop/bin/mapred --daemon stop historyser
 cat > check-cluster.sh << 'EOF'
 #!/bin/bash
 echo "=== Master Node ==="
-ssh alice3e@51.250.91.208 "jps"
+ssh alice3e@158.160.47.11 "jps"
 echo ""
 echo "=== Worker01 ==="
 ssh alice3e@158.160.122.31 "jps"
@@ -422,10 +422,10 @@ echo "=== Worker02 ==="
 ssh alice3e@158.160.100.168 "jps"
 echo ""
 echo "=== HDFS Report ==="
-ssh alice3e@51.250.91.208 "hdfs dfsadmin -report | head -20"
+ssh alice3e@158.160.47.11 "hdfs dfsadmin -report | head -20"
 echo ""
 echo "=== YARN Nodes ==="
-ssh alice3e@51.250.91.208 "yarn node -list"
+ssh alice3e@158.160.47.11 "yarn node -list"
 EOF
 
 chmod +x check-cluster.sh
