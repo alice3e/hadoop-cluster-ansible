@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<configuration>
+  <property>
+    <name>mapreduce.jobhistory.address</name>
+    <value>{{ hostvars[groups['hadoop_master'][0]]['ansible_host'] }}:10020</value>
+  </property>
+  <property>
+    <name>mapreduce.jobhistory.webapp.address</name>
+    <value>{{ hostvars[groups['hadoop_master'][0]]['ansible_host'] }}:19888</value>
+  </property>
+</configuration>

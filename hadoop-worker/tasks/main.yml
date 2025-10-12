@@ -1,4 +1,5 @@
 ---
+# tasks file for hadoop-worker
 - name: Update linux apt
   ansible.builtin.apt:
     name: "*"
@@ -6,53 +7,19 @@
     update_cache: yes
   become: yes
 
-- name: Ensure .ssh directory for management user
+- name: Ensure .ssh directory exists
   file:
     path: "/home/{{ ansible_user }}/.ssh"
     state: directory
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
     mode: '0700'
-  become: yes
 
-- name: Install master's public key for management user
+- name: Install master's public key for passwordless SSH
   authorized_key:
     user: "{{ ansible_user }}"
     key: "{{ lookup('file', 'roles/common/files/ssh/hadoop-key.pub') }}"
     state: present
-  become: yes
 
-- name: Ensure authorized_keys permissions
-  file:
-    path: "/home/{{ ansible_user }}/.ssh/authorized_keys"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    mode: '0600'
-  become: yes
-
-- name: (Optional) Allow passwordless sudo for management user
-  copy:
-    content: "{{ ansible_user }} ALL=(ALL) NOPASSWD:ALL\n"
-    dest: "/etc/sudoers.d/{{ ansible_user }}"
-    owner: root
-    group: root
-    mode: '0440'
-  become: yes
-
-- name: Disable StrictHostKeyChecking for management user SSH (optional)
-  blockinfile:
-    path: "/home/{{ ansible_user }}/.ssh/config"
-    create: yes
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    mode: '0600'
-    block: |
-      Host *
-        StrictHostKeyChecking no
-        UserKnownHostsFile=/dev/null
-  become: yes
-
-- name: Install required packages
+- name: Install required packages (OpenJDK 11)
   apt:
     name:
       - openjdk-11-jdk
@@ -63,44 +30,36 @@
   get_url:
     url: "https://downloads.apache.org/hadoop/common/hadoop-{{ hadoop_version }}/hadoop-{{ hadoop_version }}.tar.gz"
     dest: "/tmp/hadoop-{{ hadoop_version }}.tar.gz"
-    mode: '0644'
-  become: yes
-
-- name: Create hadoop install directory
-  file:
-    path: "{{ hadoop_install_dir }}"
-    state: directory
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
     mode: '0755'
-  become: yes
 
-- name: Extract Hadoop
+- name: Create hadoop installation directory
+  file:
+    path: "{{ hadoop_install_dir }}" # например, /home/alice3e/hadoop
+    state: directory
+    mode: '0755'
+
+- name: Extract Hadoop archive
   unarchive:
     src: "/tmp/hadoop-{{ hadoop_version }}.tar.gz"
     dest: "{{ hadoop_install_dir }}"
     remote_src: yes
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-  become: yes
 
-- name: Create symbolic link for Hadoop
+- name: Create symbolic link for Hadoop in /usr/local
   file:
     src: "{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}"
     dest: "/usr/local/hadoop"
     state: link
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
   become: yes
 
-- name: Set environment variables for Hadoop
+- name: Set system-wide environment variables for Hadoop
   blockinfile:
     path: "/etc/profile.d/hadoop.sh"
     block: |
       export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
       export HADOOP_HOME=/usr/local/hadoop
-      export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
-      export HADOOP_MAPRED_HOME=$HADOOP_HOME
+      export PATH=$PATH:$HADOOP_HOME/bin
+      export PATH=$PATH:$HADOOP_HOME/sbin
+      # Переменные MASTER-демонов здесь не нужны
       export HADOOP_COMMON_HOME=$HADOOP_HOME
       export HADOOP_HDFS_HOME=$HADOOP_HOME
       export YARN_HOME=$HADOOP_HOME
@@ -108,49 +67,41 @@
     mode: "0755"
   become: yes
 
-- name: Source Hadoop environment (for this run)
-  shell: "source /etc/profile.d/hadoop.sh"
-  args:
-    executable: /bin/bash
-  become: yes
-
-- name: Set environment variables in /etc/environment
+- name: Set environment variables for non-interactive sessions
   lineinfile:
     path: /etc/environment
-    line: "{{ item }}"
+    regexp: "^{{ item.key }}="
+    line: "{{ item.key }}={{ item.value }}"
     state: present
   loop:
-    - 'JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64'
-    - 'HDFS_DATANODE_USER={{ ansible_user }}'
-    - 'YARN_NODEMANAGER_USER={{ ansible_user }}'
+    - { key: 'JAVA_HOME', value: '/usr/lib/jvm/java-11-openjdk-amd64' }
+    - { key: 'HDFS_DATANODE_USER', value: '{{ ansible_user }}' }
+    - { key: 'YARN_NODEMANAGER_USER', value: '{{ ansible_user }}' }
+  become: yes
   notify:
     - restart hadoop datanode
     - restart hadoop nodemanager
-  become: yes
-
-- name: Ensure HDFS data directories exist
-  file:
-    path: "{{ item }}"
-    state: directory
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    mode: '0755'
-  loop:
-    - "{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}/hdfs/datanode"
-    - "{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}/hdfs/namenode"
-  become: yes
 
 - name: Copy Hadoop configuration files
   template:
     src: "{{ item.src }}"
     dest: "/usr/local/hadoop/etc/hadoop/{{ item.dest }}"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    mode: '0644'
   loop:
+    # Worker-ноде нужны ВСЕ конфиги, чтобы клиенты (например, Spark) могли на них работать
     - { src: "core-site.xml.j2", dest: "core-site.xml" }
     - { src: "hdfs-site.xml.j2", dest: "hdfs-site.xml" }
+    - { src: "mapred-site.xml.j2", dest: "mapred-site.xml" }
+    - { src: "yarn-site.xml.j2", dest: "yarn-site.xml" }
+  become: yes
   notify:
     - restart hadoop datanode
     - restart hadoop nodemanager
+
+- name: Set correct ownership for all Hadoop files
+  file:
+    path: "/usr/local/hadoop"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    recurse: yes
   become: yes

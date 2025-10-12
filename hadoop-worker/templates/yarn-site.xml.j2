@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<configuration>
+  <property>
+    <name>yarn.resourcemanager.hostname</name>
+    <value>{{ hostvars[groups['hadoop_master'][0]]['ansible_host'] }}</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.address</name>
+    <value>{{ hostvars[groups['hadoop_master'][0]]['ansible_host'] }}:8032</value>
+  </property>
+  <property>
+    <name>yarn.nodemanager.local-dirs</name>
+    <value>/usr/local/hadoop/yarn/local</value>
+  </property>
+  <property>
+    <name>yarn.nodemanager.log-dirs</name>
+    <value>/usr/local/hadoop/yarn/logs</value>
+  </property>
+</configuration>

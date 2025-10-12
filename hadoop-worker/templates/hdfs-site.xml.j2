@@ -1,10 +1,23 @@
+<!-- hdfs-site.xml.j2 -->
 <configuration>
+  <property>
+    <name>dfs.namenode.name.dir</name>
+    <value>file:{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}/hdfs/namenode</value>
+  </property>
+  <property>
+    <name>dfs.datanode.data.dir</name>
+    <value>file:{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}/hdfs/datanode</value>
+  </property>
   <property>
     <name>dfs.replication</name>
     <value>{{ hdfs_replication | default(2) }}</value>
   </property>
   <property>
-    <name>dfs.datanode.data.dir</name>
-    <value>file:{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}/hdfs/datanode</value>
+    <name>dfs.namenode.http-address</name>
+    <value>0.0.0.0:9870</value>
+  </property>
+  <property>
+    <name>dfs.namenode.rpc-address</name>
+    <value>{{ hostvars[groups['hadoop_master'][0]]['ansible_default_ipv4']['address'] }}:9000</value>
   </property>
 </configuration>

@@ -1,20 +1,18 @@
 ---
+# handlers file for hadoop-worker
+
 - name: restart hadoop datanode
+  command: "{{ item }}"
+  loop:
+    - /usr/local/hadoop/bin/hdfs --daemon stop datanode
+    - /usr/local/hadoop/bin/hdfs --daemon start datanode
   become: yes
   become_user: "{{ ansible_user }}"
-  shell: >
-    . /etc/profile.d/hadoop.sh
-    /usr/local/hadoop/bin/hdfs --daemon stop datanode
-    /usr/local/hadoop/bin/hdfs --daemon start datanode
-  args:
-    executable: /bin/bash
 
 - name: restart hadoop nodemanager
+  command: "{{ item }}"
+  loop:
+    - /usr/local/hadoop/bin/yarn --daemon stop nodemanager
+    - /usr/local/hadoop/bin/yarn --daemon start nodemanager
   become: yes
   become_user: "{{ ansible_user }}"
-  shell: >
-    . /etc/profile.d/hadoop.sh
-    /usr/local/hadoop/bin/yarn --daemon stop nodemanager
-    /usr/local/hadoop/bin/yarn --daemon start nodemanager
-  args:
-    executable: /bin/bash
