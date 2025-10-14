@@ -98,6 +98,17 @@
     - { key: 'YARN_RESOURCEMANAGER_USER', value: '{{ ansible_user }}' }
   become: yes
 
+- name: Stop all Hadoop services on master
+  shell: |
+    /usr/local/hadoop/bin/mapred --daemon stop historyserver 2>/dev/null || true
+    /usr/local/hadoop/bin/yarn --daemon stop resourcemanager 2>/dev/null || true
+    /usr/local/hadoop/bin/hdfs --daemon stop namenode 2>/dev/null || true
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ ansible_user }}"
+  ignore_errors: yes
+
 - name: Copy Hadoop configuration files
   template:
     src: "{{ item.src }}"
@@ -107,10 +118,6 @@
     - { src: "hdfs-site.xml.j2", dest: "hdfs-site.xml" }
     - { src: "mapred-site.xml.j2", dest: "mapred-site.xml" }
     - { src: "yarn-site.xml.j2", dest: "yarn-site.xml" }
-  notify:
-    - restart hadoop namenode
-    - restart hadoop resourcemanager
-    - restart hadoop historyserver
   become: yes
 
 - name: Render Hadoop workers file from inventory

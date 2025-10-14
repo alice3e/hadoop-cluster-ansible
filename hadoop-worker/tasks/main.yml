@@ -61,24 +61,27 @@
     - { key: 'HDFS_DATANODE_USER', value: '{{ ansible_user }}' }
     - { key: 'YARN_NODEMANAGER_USER', value: '{{ ansible_user }}' }
   become: yes
-  notify:
-    - restart hadoop datanode
-    - restart hadoop nodemanager
+
+- name: Stop all Hadoop services on worker
+  shell: |
+    /usr/local/hadoop/bin/yarn --daemon stop nodemanager 2>/dev/null || true
+    /usr/local/hadoop/bin/hdfs --daemon stop datanode 2>/dev/null || true
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ ansible_user }}"
+  ignore_errors: yes
 
 - name: Copy Hadoop configuration files
   template:
     src: "{{ item.src }}"
     dest: "/usr/local/hadoop/etc/hadoop/{{ item.dest }}"
   loop:
-    # Worker-ноде нужны ВСЕ конфиги, чтобы клиенты (например, Spark) могли на них работать
     - { src: "core-site.xml.j2", dest: "core-site.xml" }
     - { src: "hdfs-site.xml.j2", dest: "hdfs-site.xml" }
     - { src: "mapred-site.xml.j2", dest: "mapred-site.xml" }
     - { src: "yarn-site.xml.j2", dest: "yarn-site.xml" }
   become: yes
-  notify:
-    - restart hadoop datanode
-    - restart hadoop nodemanager
 
 - name: Set correct ownership for all Hadoop files
   file:
