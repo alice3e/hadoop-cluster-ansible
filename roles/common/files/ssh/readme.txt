@@ -1,0 +1,1 @@
+put here .pub and private keys which will be put to your master host
