@@ -38,5 +38,5 @@
       {% for host in groups['hadoop_worker'] %}
       {{ hostvars[host]['internal_ip'] }} {{ host }}
       {% endfor %}
-    marker: "# {mark} ANSIBLE MANAGED HADOOP CLUSTER HOSTS"
+    marker: "# {mark} ANSIBLE MANAGED HADOOP HOSTS"
   become: yes
