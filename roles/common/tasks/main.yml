@@ -30,13 +30,20 @@
     key: "{{ lookup('file', 'files/ssh/hadoop-key.pub') }}"
     state: present
 
+- name: Gather facts from all nodes
+  setup:
+  delegate_to: "{{ item }}"
+  delegate_facts: true
+  loop: "{{ groups['all'] }}"
+  run_once: true
+
 - name: Configure /etc/hosts for internal communication
   blockinfile:
     path: /etc/hosts
     block: |
-      {{ hostvars['master']['internal_ip'] }} master
+      {{ hostvars['master']['internal_ip'] }} {{ hostvars['master']['ansible_fqdn'] }} master
       {% for host in groups['hadoop_worker'] %}
-      {{ hostvars[host]['internal_ip'] }} {{ host }}
+      {{ hostvars[host]['internal_ip'] }} {{ hostvars[host]['ansible_fqdn'] }} {{ host }}
       {% endfor %}
     marker: "# {mark} ANSIBLE MANAGED HADOOP HOSTS"
   become: yes

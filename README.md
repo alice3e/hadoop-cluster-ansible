@@ -39,7 +39,7 @@ Ansible playbook для автоматического развертывани�
 hadoop_master:
   hosts:
     master:
-      ansible_host: 158.160.47.11  # Публичный IP
+      ansible_host: 51.250.72.160  # Публичный IP
       internal_ip: 10.128.0.10     # Внутренний IP
 ```
 
@@ -102,7 +102,7 @@ ansible-playbook -i inventory.yml site.yml -v
 
 На master:
 ```bash
-ssh alice3e@158.160.47.11 "jps"
+ssh alice3e@51.250.72.160 "jps"
 # Ожидается: NameNode, ResourceManager
 ```
 
@@ -122,8 +122,8 @@ yarn node -list
 
 ### Веб-интерфейсы (public master ip)
 
-- **HDFS NameNode**: http://158.160.47.11:9870 
-- **YARN ResourceManager**: http://158.160.47.11:8088
+- **HDFS NameNode**: http://51.250.72.160:9870 
+- **YARN ResourceManager**: http://51.250.72.160:8088
 
 ## Важные замечания
 
